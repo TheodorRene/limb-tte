@@ -4,10 +4,12 @@
             [next.jdbc :as jdbc]
             [next.jdbc.result-set :as rs]
             [compojure.core :refer [defroutes GET POST]]
+            [ring.middleware.reload :refer [wrap-reload]]
+            [clojure.string :as s]
             )
   )
 
-(def plaintext {"Content-Type" "text/plain"})
+(def plaintext {"Content-Type" "text/plain; charset=utf-8"})
 
 
 ;; DB stuff
@@ -56,17 +58,29 @@
 (defn insert-paste-db [ds text]
   (do-query ds insert-paste-q text))
 
+(defn getHTML [text]
+  (str "<p>" text "</p>")
+  )
+
+
+
+
+(defn nl2br [text]
+  (interpose "<br>" (s/split text #"\n"))
+  )
+
+(nl2br "hello\n")
 
 (defn getHandler [id]
-  {:status 200
-   :header plaintext
-   :body (str (get-paste-db ds id))
-   })
+  (getHTML (get-paste-db ds id)))
+   
 
 
-(defn post-form [req]
+
+
+(defn post-form [_]
    "<div>
-      <h1>Limbøtte</h1>
+      <h1>Limbøtte?</h1>
       <p> Gi meg ditt lim </p>
       <form method=\"post\" action=\"\">
        <input type=\"text\" name=\"name\" />
@@ -81,24 +95,39 @@
        ] param-p)
   )
 
+(defn returnHTML [res]
+  (str "<div>
+    <h1> Limbøtte </h1>
+    <p> Her er ditt lim </p>
+    <a href=/" (str(:paste/id res)) "> Kopier meg </a>
+    <p>" res "</p>
+  </div>")
+)
+
+(defn post-return [req]
+  (let [ return-body (insert-paste-db ds (parseBody req)) ]
+    (returnHTML return-body)
+  ))
+
 (defn postHandler [req]
   {:status 200
-   :header plaintext
+   :headers plaintext
    :body (str
              (insert-paste-db ds (parseBody req)))
-             
    })
 
 (defroutes routes
   (GET "/" [req] (post-form req))
-  (POST "/" req (postHandler req))
+  (POST "/" req (post-return req))
   (GET "/:id" [id] (getHandler id))
   )
 
 
 (def app
   (-> routes
-      p/wrap-params))
+      p/wrap-params
+      wrap-reload
+      ))
 
 (defn -main [& _]
   (j/run-jetty app {:port 3000}))
