@@ -8,8 +8,6 @@
             [clojure.string :as s]
             [selmer.parser :as selm]))
 
-(def plaintext {"Content-Type" "text/plain; charset=utf-8"})
-
 ;; DB stuff
 (defn db [name] {:dbtype "sqlite" :dbname name})
 
@@ -24,7 +22,7 @@
   ([ds query param]  (jdbc/execute-one! ds [query param] db-settings)))
 
 ;; QUERIES
-(def drop-table "DROP TABLE paste")
+;;(def drop-table "DROP TABLE paste")
 
 (def create-table "
   CREATE TABLE IF NOT EXISTS paste (
@@ -45,7 +43,7 @@
 ;; INIT DB
 ;;(do-query ds drop-table)
 (do-query ds create-table)
-(do-query ds insert-paste-q "gurba")
+;;(do-query ds insert-paste-q "gurba")
 ;; END QUERIES
 
 (defn get-paste-db [ds id]
@@ -59,9 +57,7 @@
   (selm/render "<p> {{text}} </p>" {:text text}))
 
 (defn nl2br [text]
-  (interpose "<br>" (s/split text #"\n")))
-
-(nl2br "hello\n")
+  (apply str (interpose "<br>" (s/split text #"\n"))))
 
 (defn getHandler [id]
   (getHTML (get-paste-db ds id)))
@@ -81,13 +77,15 @@
         param-p (get form-params "name")] param-p))
 
 (defn returnHTML [res]
-  (selm/render "<div>
+  (nl2br (selm/render "<div>
     <h1> Limbøtte </h1>
     <p> Her er ditt lim </p>
-    <a href=/{url}> Kopier meg </a>
+    <a href=/{{url}}> Kopier meg </a>
     <p> {{res}} </p>
   </div>" {:url (str (:paste/id res))
-           :res res}))
+           :res res})))
+
+(returnHTML #:paste{:id "<h1> hei </h1>" :test "gureba"})
 
 (defn post-return [req]
   (let [return-body (insert-paste-db ds (parseBody req))]
