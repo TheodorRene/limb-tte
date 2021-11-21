@@ -9,9 +9,12 @@
                   [ring/ring-devel "1.9.4"]
                   [com.github.seancorfield/next.jdbc "1.2.737"]
                   [org.xerial/sqlite-jdbc "3.36.0.1"]
-                  [compojure "1.6.2"]]
+                  [compojure "1.6.2"]
+                  [selmer "1.12.44"]]
   :main ^:skip-aot limbøtte.core
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}}
-  :plugins [[cider/cider-nrepl "0.24.0"]])
+  :plugins [[cider/cider-nrepl "0.24.0"]
+            [lein-cljfmt "0.8.0"]
+            ])
   

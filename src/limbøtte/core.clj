@@ -6,6 +6,7 @@
             [compojure.core :refer [defroutes GET POST]]
             [ring.middleware.reload :refer [wrap-reload]]
             [clojure.string :as s]
+            [selmer.parser :as selm]
             )
   )
 
@@ -59,10 +60,8 @@
   (do-query ds insert-paste-q text))
 
 (defn getHTML [text]
-  (str "<p>" text "</p>")
+  (selm/render "<p> {{text}} </p>" {:text text})
   )
-
-
 
 
 (defn nl2br [text]
@@ -74,9 +73,6 @@
 (defn getHandler [id]
   (getHTML (get-paste-db ds id)))
    
-
-
-
 
 (defn post-form [_]
    "<div>
@@ -95,26 +91,22 @@
        ] param-p)
   )
 
+
 (defn returnHTML [res]
-  (str "<div>
+  (selm/render "<div>
     <h1> Limbøtte </h1>
     <p> Her er ditt lim </p>
-    <a href=/" (str(:paste/id res)) "> Kopier meg </a>
-    <p>" res "</p>
-  </div>")
+    <a href=/{url}> Kopier meg </a>
+    <p> {{res}} </p>
+  </div>" {:url (str(:paste/id res))
+           :res res
+           })
 )
 
 (defn post-return [req]
   (let [ return-body (insert-paste-db ds (parseBody req)) ]
     (returnHTML return-body)
   ))
-
-(defn postHandler [req]
-  {:status 200
-   :headers plaintext
-   :body (str
-             (insert-paste-db ds (parseBody req)))
-   })
 
 (defroutes routes
   (GET "/" [req] (post-form req))
