@@ -6,12 +6,9 @@
             [compojure.core :refer [defroutes GET POST]]
             [ring.middleware.reload :refer [wrap-reload]]
             [clojure.string :as s]
-            [selmer.parser :as selm]
-            )
-  )
+            [selmer.parser :as selm]))
 
 (def plaintext {"Content-Type" "text/plain; charset=utf-8"})
-
 
 ;; DB stuff
 (defn db [name] {:dbtype "sqlite" :dbname name})
@@ -22,10 +19,9 @@
 (def db-settings {:return-keys true
                   :build-fn rs/as-unqualified-lower-maps})
 
-(defn do-query 
-  ([ds query]  (jdbc/execute! ds [query ]))
-  ([ds query param]  (jdbc/execute-one! ds [query param] db-settings))
-  )
+(defn do-query
+  ([ds query]  (jdbc/execute! ds [query]))
+  ([ds query param]  (jdbc/execute-one! ds [query param] db-settings)))
 
 ;; QUERIES
 (def drop-table "DROP TABLE paste")
@@ -36,7 +32,7 @@
       text TEXT)
   ")
 
-(def get-paste-q 
+(def get-paste-q
   "SELECT id, text FROM paste WHERE id=?")
 
 (def insert-paste-q "
@@ -53,29 +49,25 @@
 ;; END QUERIES
 
 (defn get-paste-db [ds id]
- (:paste/text 
+  (:paste/text
    (do-query ds get-paste-q id)))
 
 (defn insert-paste-db [ds text]
   (do-query ds insert-paste-q text))
 
 (defn getHTML [text]
-  (selm/render "<p> {{text}} </p>" {:text text})
-  )
-
+  (selm/render "<p> {{text}} </p>" {:text text}))
 
 (defn nl2br [text]
-  (interpose "<br>" (s/split text #"\n"))
-  )
+  (interpose "<br>" (s/split text #"\n")))
 
 (nl2br "hello\n")
 
 (defn getHandler [id]
   (getHTML (get-paste-db ds id)))
-   
 
 (defn post-form [_]
-   "<div>
+  "<div>
       <h1>Limbøtte?</h1>
       <p> Gi meg ditt lim </p>
       <form method=\"post\" action=\"\">
@@ -84,13 +76,9 @@
       </form>
     </div>")
 
-
 (defn parseBody [req]
   (let [{:keys [form-params]} req
-       param-p (get form-params "name")
-       ] param-p)
-  )
-
+        param-p (get form-params "name")] param-p))
 
 (defn returnHTML [res]
   (selm/render "<div>
@@ -98,28 +86,22 @@
     <p> Her er ditt lim </p>
     <a href=/{url}> Kopier meg </a>
     <p> {{res}} </p>
-  </div>" {:url (str(:paste/id res))
-           :res res
-           })
-)
+  </div>" {:url (str (:paste/id res))
+           :res res}))
 
 (defn post-return [req]
-  (let [ return-body (insert-paste-db ds (parseBody req)) ]
-    (returnHTML return-body)
-  ))
+  (let [return-body (insert-paste-db ds (parseBody req))]
+    (returnHTML return-body)))
 
 (defroutes routes
   (GET "/" [req] (post-form req))
   (POST "/" req (post-return req))
-  (GET "/:id" [id] (getHandler id))
-  )
-
+  (GET "/:id" [id] (getHandler id)))
 
 (def app
   (-> routes
       p/wrap-params
-      wrap-reload
-      ))
+      wrap-reload))
 
 (defn -main [& _]
   (j/run-jetty app {:port 3000}))
