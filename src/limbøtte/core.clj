@@ -102,4 +102,4 @@
       wrap-reload))
 
 (defn -main [& _]
-  (j/run-jetty app {:port 3000}))
+  (j/run-jetty app {:port 80}))
